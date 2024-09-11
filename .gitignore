@@ -1,0 +1,8 @@
+backend/logs/*
+backend/.env
+backend/node_modules/
+backend/config/notes.md
+
+frontend/node_modules/
+frontend/src/.env
+frontend/.gitignore

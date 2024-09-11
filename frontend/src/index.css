@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+} */
+
+/* Add this to your CSS file */
+
+@font-face {
+  font-family: 'Orbitron';
+  src: url('../public/fonts/Orbitron.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gordita';
+  src: url('../public/fonts/Gordita.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* body {
+  font-family: 'Orbitron', sans-serif;
+} */
+
+.scale-up-down {
+  animation: scaleUpDown 0.15s;
+}
+
+@keyframes scaleUpDown {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}

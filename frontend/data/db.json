@@ -1,0 +1,172 @@
+{
+  "passwords": [
+    {
+      "id": "001",
+      "userID": "001",
+      "website": "google.com",
+      "username": "ompatilnewuser",
+      "password": "also new usernamefdf",
+      "note": "this is an updated note again and again"
+    },
+    {
+      "id": "3",
+      "userID": "001",
+      "website": "monkeytype.com",
+      "username": "ompatil",
+      "password": "monkey",
+      "note": "this is a note 3"
+    },
+    {
+      "id": "4",
+      "userID": "001",
+      "website": "phonepe.com",
+      "username": "ompatil11133",
+      "password": "pe",
+      "note": "this is a note 4"
+    },
+    {
+      "id": "6",
+      "userID": "1",
+      "website": "keep.google.com",
+      "username": "ompatil",
+      "password": "ompatil",
+      "note": "this is a note by me too"
+    },
+    {
+      "id": "10",
+      "userID": "1",
+      "website": "github.com",
+      "username": "ompatil",
+      "password": "secret",
+      "note": "nnooote"
+    },
+    {
+      "id": "sQTHl-uFW0A87HJ2OpJ1N",
+      "userID": "1",
+      "website": "keybr.comm",
+      "username": "ompatil",
+      "password": "ompatil",
+      "note": "a good typing website"
+    },
+    {
+      "id": "KuOw0Vw7KclsAKjPuWz4S",
+      "userID": "1",
+      "website": "chatgpt.com",
+      "username": "ompatil",
+      "password": "generativsmart",
+      "note": "this was generated using ai"
+    },
+    {
+      "id": "cIjoCpq01EgyaRNXoJb3J",
+      "userID": "1",
+      "website": "gemini.google.com",
+      "username": "ompatil",
+      "password": "gemini",
+      "note": "gemini"
+    },
+    {
+      "id": "iNGGlxfEJYpLcnUVcDjIF",
+      "userID": "1",
+      "website": "x.com",
+      "username": "cyberman1512",
+      "password": "ompatil",
+      "note": "twitter account"
+    },
+    {
+      "id": "X6FImA6l-o0ud4N5p4wK-",
+      "userID": "1",
+      "website": "perplexity",
+      "username": "",
+      "password": "ai",
+      "note": ""
+    },
+    {
+      "id": "TRpe5JVndeMEEYx7UQ2nD",
+      "userID": "ukotHkjgLnps63N-QsntM",
+      "website": "",
+      "username": "",
+      "password": "",
+      "note": ""
+    },
+    {
+      "id": "wa3jINAPf5dBtw-AD5ToU",
+      "userID": "58h_Uesch-WnwEnIBS3V3",
+      "website": "youtube.com",
+      "username": "ompatil",
+      "password": "aaaaaaaaa",
+      "note": "youtube"
+    },
+    {
+      "id": "YCPvVPFNH1XF9boK90jim",
+      "userID": "VRJf06rAJfVg3rNck04FK",
+      "website": "shield.com",
+      "username": "ompatil",
+      "password": "ompatil",
+      "note": "opps i dont the hint"
+    },
+    {
+      "id": "-ePG7YJjhPFygY-EZ-73a",
+      "userID": "MMweKhyDm03TacMnqXr4h",
+      "website": "gmail.com",
+      "username": "patved022@gmail.com",
+      "password": "Prime@2210",
+      "note": ":)"
+    }
+  ],
+  "notes": [
+    {
+      "id": "bhcipq0eeJzpRDgLxb7vs",
+      "title": "Cyber Log",
+      "content": ""
+    },
+    {
+      "id": "s929Yg2K1U6qNQCeax18m",
+      "title": "Philosophy Log",
+      "content": ""
+    },
+    {
+      "id": "YpMRXNcgKuVvFcQHABtZk",
+      "title": "Hello World",
+      "content": "123"
+    },
+    {
+      "id": "ebb7",
+      "title": "Code",
+      "content": "import { useState, useEffect, useRef } from \"react\";\nimport { \n    useGetNoteQuery,\n    useUpdateNoteMutation,\n    useDeleteNoteMutation\n} from \"./notesApiSlice\";\nimport { Link, useNavigate, useParams } from \"react-router-dom\";\n\nconst Note = () => {\n    const navigate = useNavigate();\n    const { id } = useParams();\n    const [newTitle, setNewTitle] = useState('');\n    const [newContent, setNewContent] = useState('');\n    const textareaRef = useRef(null);\n    const formRef = useRef(null); \n\n    const [updateNote] = useUpdateNoteMutation();\n    const [deleteNote] = useDeleteNoteMutation();\n    \n    const {\n        data: note,\n        isLoading,\n        isSuccess,\n        isError,\n    } = useGetNoteQuery(id, { skip: !id });\n\n    useEffect(() => {\n        if (note) {\n            setNewTitle(note.title);\n            setNewContent(note.content);\n        }\n    }, [note]);\n\n    useEffect(() => {\n        const handleClickOutside = (event) => {\n            if (formRef.current && !formRef.current.contains(event.target)) {\n                if (note && (note.title !== newTitle || note.content !== newContent)) {\n                    updateNote({\n                        id: note.id,\n                        title: newTitle,\n                        content: newContent,\n                    })\n                    .unwrap()\n                    .then(() => {\n                        console.log(\"Updated successfully\");\n                    })\n                    .catch((error) => {\n                        console.error(\"Failed to update note:\", error);\n                    });\n                }\n                navigate('/notes');\n            }\n        };\n        document.addEventListener('mousedown', handleClickOutside);\n        return () => {\n            document.removeEventListener('mousedown', handleClickOutside);\n        };\n    }, [navigate, newContent, newTitle, note, updateNote]);\n\n    const handleDeleteNote = () => {\n        if (id) {\n            deleteNote({ id: id })\n            .unwrap()\n            .then(() => {\n                console.log(\"Note deleted\");\n                navigate('/notes');\n            })\n            .catch((error) => {\n                console.error(\"Failed to delete the note:\", error);\n                navigate('/notes');\n            });\n        }\n    };\n\n    const handleInput = (event) => {\n        const textarea = textareaRef.current;\n        textarea.style.height = \"auto\";\n        const scrollHeight = textarea.scrollHeight;\n        const maxHeight = 500;\n        textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;\n        textarea.style.overflowY = scrollHeight > maxHeight ? \"auto\" : \"hidden\";\n        setNewContent(event.target.value);\n    };\n\n    useEffect(() => {\n        if (textareaRef.current) {\n            // Set the initial height based on content\n            textareaRef.current.style.height = \"auto\";\n            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 500)}px`;\n            textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 500 ? \"auto\" : \"hidden\";\n        }\n    }, [newContent]); // Adjust height when newContent changes\n\n    let content;\n    if (isLoading) {\n        content = <div>Securely loading note...</div>;\n    } else if (isSuccess) {\n        content = (\n            <div className=\"\">\n                <div>\n                    <input\n                        type=\"text\"\n                        id=\"title\"\n                        value={newTitle}\n                        onChange={(e) => setNewTitle(e.target.value)}\n                        placeholder=\"Title\"\n                        className=\"w-full\"\n                    />\n                </div>\n                <div>\n                    <textarea\n                        ref={textareaRef}\n                        id=\"content\"\n                        value={newContent}\n                        onInput={handleInput}\n                        placeholder=\"Content\"\n                        style={{ maxHeight: \"500px\" }}\n                        className=\"w-full mt-2 resize-none\"\n                    ></textarea>\n                </div>\n                <Link to=\"/notes\">Back</Link>\n                <button onClick={handleDeleteNote}>\n                    Delete\n                </button>\n            </div>\n        );\n    } else if (isError) {\n        navigate(\"/notes\");\n    }\n\n    return (\n        <main className=\"absolute\">\n            <div className=\"flex justify-center w-screen\">\n                <div className=\"bg-red-700 p-4 w-[700px]\" ref={formRef}>\n                    {content}\n                </div>\n            </div>\n        </main>\n    );\n};\n\nexport default Note;\n"
+    },
+    {
+      "id": "cc67",
+      "title": "Code for react",
+      "content": "import { useState, useEffect, useRef } from \"react\";\nimport { \n    useGetNoteQuery,\n    useUpdateNoteMutation,\n    useDeleteNoteMutation\n} from \"./notesApiSlice\";\nimport { Link, useNavigate, useParams } from \"react-router-dom\";\n\nconst Note = () => {\n    const navigate = useNavigate();\n    const { id } = useParams();\n    const [newTitle, setNewTitle] = useState('');\n    const [newContent, setNewContent] = useState('');\n    const textareaRef = useRef(null);\n    const formRef = useRef(null); \n\n    const [updateNote] = useUpdateNoteMutation();\n    const [deleteNote] = useDeleteNoteMutation();\n    \n    const {\n        data: note,\n        isLoading,\n        isSuccess,\n        isError,\n    } = useGetNoteQuery(id, { skip: !id });\n\n    useEffect(() => {\n        if (note) {\n            setNewTitle(note.title);\n            setNewContent(note.content);\n        }\n    }, [note]);\n\n    useEffect(() => {\n        const handleClickOutside = (event) => {\n            if (formRef.current && !formRef.current.contains(event.target)) {\n                if (note && (note.title !== newTitle || note.content !== newContent)) {\n                    updateNote({\n                        id: note.id,\n                        title: newTitle,\n                        content: newContent,\n                    })\n                    .unwrap()\n                    .then(() => {\n                        console.log(\"Updated successfully\");\n                    })\n                    .catch((error) => {\n                        console.error(\"Failed to update note:\", error);\n                    });\n                }\n                navigate('/notes');\n            }\n        };\n        document.addEventListener('mousedown', handleClickOutside);\n        return () => {\n            document.removeEventListener('mousedown', handleClickOutside);\n        };\n    }, [navigate, newContent, newTitle, note, updateNote]);\n\n    const handleDeleteNote = () => {\n        if (id) {\n            deleteNote({ id: id })\n            .unwrap()\n            .then(() => {\n                console.log(\"Note deleted\");\n                navigate('/notes');\n            })\n            .catch((error) => {\n                console.error(\"Failed to delete the note:\", error);\n                navigate('/notes');\n            });\n        }\n    };\n\n    const handleInput = (event) => {\n        const textarea = textareaRef.current;\n        textarea.style.height = \"auto\";\n        const scrollHeight = textarea.scrollHeight;\n        const maxHeight = 500;\n        textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;\n        textarea.style.overflowY = scrollHeight > maxHeight ? \"auto\" : \"hidden\";\n        setNewContent(event.target.value);\n    };\n\n    useEffect(() => {\n        if (textareaRef.current) {\n            // Set the initial height based on content\n            textareaRef.current.style.height = \"auto\";\n            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 500)}px`;\n            textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 500 ? \"auto\" : \"hidden\";\n        }\n    }, [newContent]); // Adjust height when newContent changes\n\n    let content;\n    if (isLoading) {\n        content = <div>Securely loading note...</div>;\n    } else if (isSuccess) {\n        content = (\n            <div className=\"\">\n                <div>\n                    <input\n                        type=\"text\"\n                        id=\"title\"\n                        value={newTitle}\n                        onChange={(e) => setNewTitle(e.target.value)}\n                        placeholder=\"Title\"\n                        className=\"w-full\"\n                    />\n                </div>\n                <div>\n                    <textarea\n                        ref={textareaRef}\n                        id=\"content\"\n                        value={newContent}\n                        onInput={handleInput}\n                        placeholder=\"Content\"\n                        style={{ maxHeight: \"500px\" }}\n                        className=\"w-full mt-2 resize-none\"\n                    ></textarea>\n                </div>\n                <Link to=\"/notes\">Back</Link>\n                <button onClick={handleDeleteNote}>\n                    Delete\n                </button>\n            </div>\n        );\n    } else if (isError) {\n        navigate(\"/notes\");\n    }\n\n    return (\n        <main className=\"absolute\">\n            <div className=\"flex justify-center w-screen\">\n                <div className=\"bg-red-700 p-4 w-[700px]\" ref={formRef}>\n                    {content}\n                </div>\n            </div>\n        </main>\n    );\n};\n\nexport default Note;\n"
+    },
+    {
+      "id": "4a38",
+      "title": "code snippet",
+      "content": "import { useState, useRef, useEffect } from \"react\";\nimport { useAddNoteMutation } from \"./notesApiSlice\";\n\nconst AddNote = ({ setAddNewNote }) => {\n    const formRef = useRef(null); \n    const textareaRef = useRef(null); // Reference for the textarea\n    const [newTitle, setNewTitle] = useState('');\n    const [newContent, setNewContent] = useState('');\n    const [addNote] = useAddNoteMutation();\n\n    useEffect(() => {\n        const handleClickOutside = (event) => {\n            if (formRef.current && !formRef.current.contains(event.target)) {\n                if (newTitle || newContent) {\n                    addNote({\n                        title: newTitle,\n                        content: newContent\n                    }).unwrap()\n                    .then(() => {\n                        console.log(\"Note added successfully\");\n                    })\n                    .catch((error) => {\n                        console.error(\"Failed to add note:\", error);\n                    });\n                }\n                setAddNewNote(false);\n            }\n        };\n\n        document.addEventListener('mousedown', handleClickOutside);\n        return () => {\n            document.removeEventListener('mousedown', handleClickOutside);\n        };\n    }, [addNote, newContent, newTitle, setAddNewNote]);\n\n    const handleChange = (event) => {\n        const textarea = textareaRef.current;\n        textarea.style.height = \"auto\";\n        const scrollHeight = textarea.scrollHeight;\n        const maxHeight = 500;\n        textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;\n        textarea.style.overflowY = scrollHeight > maxHeight ? \"auto\" : \"hidden\";\n        setNewContent(event.target.value);\n    };\n\n    useEffect(() => {\n        if (textareaRef.current) {\n            textareaRef.current.style.height = \"auto\";\n            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 500)}px`;\n            textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 500 ? \"auto\" : \"hidden\";\n        }\n    }, [newContent]); // Trigger this effect when newContent changes\n\n    return (\n        <div className=\"bg-red-700 p-4 w-[700px]\" ref={formRef}>\n            <div>\n                <div>\n                    <input\n                        type=\"text\"\n                        id=\"title\"\n                        value={newTitle}\n                        onChange={(e) => setNewTitle(e.target.value)}\n                        placeholder=\"Title\"\n                        className=\"w-full\"\n                    />\n                </div>\n                <div>\n                    <textarea\n                        ref={textareaRef}\n                        id=\"content\"\n                        value={newContent}\n                        onChange={handleChange} // Handle resizing\n                        placeholder=\"Content\"\n                        className=\"w-full\"\n                        style={{ maxHeight: \"500px\" }} // Ensure textarea doesn't exceed max height\n                    ></textarea>\n                </div>\n            </div>\n        </div>\n    );\n};\n\nexport default AddNote;\n"
+    },
+    {
+      "id": "512a",
+      "title": "Finance notes",
+      "content": "Buckminster Fuller coined the term GRUNCH, acronym for Gross Universal Cash Heist.\n\nDon't be terrified of making mistakes. Just as a child falls over several times until he learns to walks and then moves on to fail and learn other more difficult tasks like cycling, don't we afraid to follow your heart and fail. You are wired not to fail so that your ancestors wouldn't die off in a stupid way in a competitive game of life, but this turn out to be obstructive in your success financially, physically, and emotionally.   \n\nAgriculture flourished around 10000 BC.\n\nThe government doesn't allow financial education to be taught in schools and colleges.\n\nThe education that most of the world follow draws its roots back to Prussia where  kinder garden was introduced as a system to systematically train the young to be soldiers in war, with major focus of inducing qualities like obedience, dependent, dull; lacking imagination. They were prepared to go into the battle, do as told, don't make mistakes, follow orders, don't argue, don't question the authorities and get the job done. Schooling that once produces armies of soldiers will not produce armies of workers.\n\nWealthy rich families have secretly funded major universities in exchange for great employees to funnel into their institutions. Rockefelller quotes \"I want a nation of workers, not a nation of thinkers\".\n\nThe ultra rich dictate what the populace learns, they teach you things that are in always in their best interest even though it maybe not be in your best interest. In fact it is almost never in your best interest as it only prunes your true capabilities. \n\nOn December 23th 1913 the Federal Reserve was established to control the US monetary policy. The Fed is the the brain child of the US senators and the executives wealthiest bankers of the day. They got together in train car at Jekyll island years ago and said, \"We have to put these new bank coming up out west out of business they are taking our business away from us\". That was the premise for the creation of Fed, to be able to control the banking system and the money supply.\n\nThe Federal Reserve is not federal in any sense, it doesn't hold any reserves, nor it is a bank. Its a privately held company. \n\nThe Federal Reserve is used to refer to the Federal Reserve System which consists of 12 reserve bank. The proposition sold to the public was to keep the money flowing around so that it is not sitting in Wall Street but can reach to you in case of any problem. In practice that's not what has happened. The Fed is structured as a corporation where there are certain shares that the biggest banks own in the Federal Reserve called the ownership of capital stock. Big banks more shares, smaller banks less shares. This ownership is reflected as authority, when there is a problem in the Wall Street or with a big bank, because technically the bank has ownership in a company that can electronically create money to solve the monetary problem.\n\nThe Fed is situated in the Washington and its budget comes from the government. Everything from their pens, chairs, travel expense accounts, utility bills are all paid by taxpayers.\n\nTo summarize, the Fed is a private corporation with banks as shareholders. The bigger the banks, more power it has. The board is chosen by the government and its operating costs are paid by taxpayers. The Fed prints more money, increases or lowers interest rates as it sees fit not for the public but for the banks.\n\nThe topic of money is systematically made complex with no awareness to the public to direct the general consensus towards going to work, get a paycheck, invest in a 401k, stocks, or mutual funds and fool them into thinking that's how they are going to make money. They are not taught to think outside the box, outside of that system because that will make them no longer dependable and controllable.\n\nIt is in the best interest of the businesses, politicians, government to hve a society that is compliant. A society that does what its told and goes in the direction that they need to. It allows them to maintain control.\n\nTo understand real financial education we have to understand history. It was August 15th 1971, Nixon comes on interrupting bonanza; the most popular TV show in America and announces \"hey sports fans, I am taking the dollar off the gold standard. Basically, dollar became fake money. The US dollar is measurable, exchangeable, but doesn't store value cause they print it, its debt. \n\nThe Fed can print more money when it needs to so technically, they don't need taxes. But that's not what they are talking about, because the same people that are supportive of the modern monetary theory are also supportive of more progressive taxes and bringing more money into the government, so the theory itself doesn't actually rely on that. The modern monetary system is a heist. Money is just a blank piece of paper whose only values and power comes by authority of someone else under threat of surrendering it and going to jail.\n\nThe money you put into the bank is liability for them, they have to pay you interest on it. They therefore lend the money. \n\nBanks can issue a loan of amount multiple times(10x or more) higher than they have sitting around in their vaults, because they know you are not going to come get you money right away. They lend money that didn't exist. Money becomes debt.\n\nThe money is made by taking working classes money and loaning it in the form of debt and equity. Money doesn't exist until someone borrow it and it disappears when they pay it back. They conjure with money.\n\nPeople say live debt free, but if everybody did that the economy will collapse. We have to have debt or else there is no value to the money. But we need to leverage good debt and stay away from bad debt.\n\nAsset Classes\n1. Commodities: oil, gold, silver, fruits, sugar\n2. Paper Assets: stocks, bonds, shares\n3. Real Estate\n4. Business Assets\n\nTo borrow huge sums of money you need to know financial statement.\n"
+    }
+  ],
+  "users": [
+    {
+      "id": "1",
+      "fullName": "Om Patil",
+      "email": "patilom001@gmail.com",
+      "address": {
+        "streetAddress": "A 1202 Grande View 7 Phase 4 Katraj-Dehu Rd Bypass, Ambegaon BK, Pune, Maharashtra",
+        "city": "Ambegaon BK",
+        "state": "Maharashtra",
+        "country": "India",
+        "pincode": "411046"
+      },
+      "pan": "PANN0123P",
+      "aadhaar": "8329 7822 2882",
+      "passport": "P261723",
+      "phone": "9049999499",
+      "password": "ompatil"
+    }
+  ]
+}
