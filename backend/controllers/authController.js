@@ -6,9 +6,9 @@ import asyncHandler from 'express-async-handler';
 // @route POST /auth
 // @access Public
 const login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body
+    const { email, hash } = req.body
 
-    if (!email || !password) {
+    if (!email || !hash) {
         return res.status(400).json({ message: 'All fields are required' })
     }
 
@@ -17,8 +17,20 @@ const login = asyncHandler(async (req, res) => {
     if (!foundUser) {
         return res.status(401).json({ message: 'Unauthorized' })
     }
+    // console.log('package', foundUser.encryptedPackage)
 
-    const match = password === foundUser.password;
+    const { encryptedPackage } = foundUser;
+    const encryptedPackageBase64 = atob(encryptedPackage);
+    const encryptedPackageBytes = new Uint8Array(encryptedPackageBase64.length);
+
+    for (let i = 0; i < encryptedPackageBase64.length; i++) {
+        encryptedPackageBytes[i] = encryptedPackageBase64.charCodeAt(i);
+    }
+
+    const hashBytes = encryptedPackageBytes.slice(16+12);
+    const base64Hash = btoa(String.fromCharCode(...hashBytes));
+
+    const match = hash === base64Hash;
 
     if (!match) return res.status(401).json({ message: 'Unauthorized' })
 
@@ -27,10 +39,11 @@ const login = asyncHandler(async (req, res) => {
             "UserInfo": {
                 "id": foundUser._id,
                 "email": foundUser.email,
+                "encryptedPackage": foundUser.encryptedPackage
             }
         },
         process.env.JWT_ACCESS_SECRET,
-        { expiresIn: '15m' }
+        { expiresIn: '30m' }
     )
 
     const refreshToken = jwt.sign(
@@ -74,12 +87,13 @@ const refresh = (req, res) => {
             const accessToken = jwt.sign(
                 {
                     "UserInfo": {
+                        "id": foundUser._id,
                         "email": foundUser.email,
-                        "id": foundUser._id
+                        "encryptedPackage": foundUser.encryptedPackage
                     }
                 },
                 process.env.JWT_ACCESS_SECRET,
-                { expiresIn: '15m' }
+                { expiresIn: '30m' }
             )
 
             res.json({ accessToken })
@@ -98,8 +112,8 @@ const logout = (req, res) => {
 }
 
 // @desc Create new user
-// @route POST /users
-// @access Private
+// @route POST /auth/new
+// @access Public
 const createNewUser = asyncHandler(async (req, res) => {
     const { 
         fullName = '', 
@@ -110,24 +124,23 @@ const createNewUser = asyncHandler(async (req, res) => {
         dob = '', 
         pan = '', 
         aadhaar = '', 
-        passport = '' 
+        passport = '',
+        encryptedPackage = '' 
     } = req.body;
     
-    if(!fullName || !email || !password){
+    if(!fullName || !email || !encryptedPackage){
         return res.status(400).json({ message: 'All fields are required' });
     }
 
-    //lean strips extra mongoos methods
+    //lean strips extra mongoose methods
     //exec to get back a promise when you pass in value not need when no valeus passed like find()
-    const duplicate = await User.findOne({ email }).lean().exec();
+    const duplicate = await User.findOne({ email }).collation({ locale: 'en', strength: 2 }).lean().exec();
 
     if(duplicate) {
         return res.status(409).json({ message: 'Email already exists'});
     }
 
-    // const encryptedPassword = encrypt(password);
-
-    const userObject = { fullName, email, password, phone, dob, address, pan, aadhaar, passport}
+    const userObject = { fullName, email, password, phone, dob, address, pan, aadhaar, passport, encryptedPackage}
 
     const user = await User.create(userObject);
 
@@ -138,9 +151,47 @@ const createNewUser = asyncHandler(async (req, res) => {
     }
 })
 
+// @desc Get user salt
+// @route GET /auth
+// @access Public
+const getSalt = asyncHandler(async(req, res) => {
+    const { email } = req.body;
+
+    // Check if email is provided
+    if (!email) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const user = await User.findOne({ email: email }).lean();
+
+    if(!user) {
+        return res.status(400).json({message: 'User not found'});
+    }
+
+    const { encryptedPackage } = user; 
+
+    if(!encryptedPackage) {
+        return res.status(400).json({message: 'No encryption package found'});
+    }
+    
+    const encryptedPackageBase64 = atob(encryptedPackage);
+    const encryptedPackageBytes = new Uint8Array(encryptedPackageBase64.length);
+
+    for (let i = 0; i < encryptedPackageBase64.length; i++) {
+        encryptedPackageBytes[i] = encryptedPackageBase64.charCodeAt(i);
+    }
+
+    const saltBytes = encryptedPackageBytes.slice(0, 16);
+
+    const base64Salt = btoa(String.fromCharCode(...saltBytes));
+
+    res.json({ salt: base64Salt });
+})
+
 export {
     login,
     refresh,
     logout,
-    createNewUser
+    createNewUser,
+    getSalt
 };

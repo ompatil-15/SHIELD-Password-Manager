@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="16"
+   height="16"
+   fill="currentColor"
+   class="bi bi-github"
+   viewBox="0 0 16 16"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="github.svg"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="15.75"
+     inkscape:cx="8"
+     inkscape:cy="7.968254"
+     inkscape:window-width="1366"
+     inkscape:window-height="745"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <rect
+     style="fill:#000000;stroke:#000000"
+     id="rect1"
+     width="19.111111"
+     height="19.428572"
+     x="-1.2063493"
+     y="-1.3968254" />
+  <path
+     d="m 8.0634913,0.1269841 c -4.42,0 -7.99999953,3.58 -7.99999953,8.0000002 0,3.5399997 2.29000003,6.5299997 5.46999953,7.5899997 0.4,0.07 0.55,-0.17 0.55,-0.38 0,-0.19 -0.01,-0.82 -0.01,-1.49 -2.01,0.37 -2.53,-0.49 -2.69,-0.94 -0.09,-0.23 -0.4799995,-0.94 -0.8199995,-1.13 -0.28,-0.15 -0.68,-0.52 -0.01,-0.53 0.63,-0.01 1.0799995,0.58 1.2299995,0.82 0.72,1.21 1.87,0.87 2.33,0.66 0.07,-0.52 0.28,-0.87 0.51,-1.07 -1.78,-0.2 -3.6399995,-0.89 -3.6399995,-3.9499997 0,-0.8700002 0.3099995,-1.5900002 0.8199995,-2.1500002 -0.08,-0.2 -0.36,-1.02 0.08,-2.12 0,0 0.67,-0.21 2.2,0.82 0.64,-0.18 1.32,-0.27 2,-0.27 0.68,0 1.36,0.09 1.9999997,0.27 1.53,-1.04 2.2,-0.82 2.2,-0.82 0.44,1.1 0.16,1.92 0.08,2.12 0.51,0.56 0.82,1.27 0.82,2.1500002 0,3.0699997 -1.87,3.7499997 -3.6499997,3.9499997 0.2899995,0.25 0.5399997,0.73 0.5399997,1.48 0,1.07 -0.01,1.93 -0.01,2.2 0,0.21 0.15,0.46 0.55,0.38 a 8.01,8.01 0 0 0 5.45,-7.5899997 c 0,-4.4200002 -3.58,-8.0000002 -7.9999997,-8.0000002"
+     id="path1"
+     style="fill:#999999" />
+</svg>

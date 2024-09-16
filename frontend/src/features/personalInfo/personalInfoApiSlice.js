@@ -8,7 +8,7 @@ export const personalInfoApiSlice = apiSlice.injectEndpoints({
         }),
         updatePersonalInformation: builder.mutation({
             query: (user) => ({
-                url: `/users/66dedb26eb36d09989bf22fc`,
+                url: `/users/${user.id}`,
                 method: 'PATCH',
                 body: user,
             }),

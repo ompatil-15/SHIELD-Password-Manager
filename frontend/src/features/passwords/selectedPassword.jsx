@@ -1,14 +1,25 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useGetPasswordQuery, useDeletePasswordMutation } from "./passwordsApiSlice";
 import UpdatePassword from "./updatePassword";
 import { toast } from 'sonner';
+import { Base64ToUint8Array, decryptDataBase64 } from "../../utils/cryptoUtils";
+import useAuth from "../../hooks/useAuth";
 
 const SelectedPassword = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { encryptionKey, IV } = useAuth();
+
     const [editPassword, setEditPassword] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    const [decryptedUsername, setDecryptedUsername] = useState("");
+    const [decryptedPassword, setDecryptedPassword] = useState("");
+    const [decryptedWebsite, setDecryptedWebsite] = useState("");
+    const [decryptedNote, setDecryptedNote] = useState("");
+
+    const [isDecrypting, setIsDecrypting] = useState(true);
 
     const {
         data: password,
@@ -17,6 +28,34 @@ const SelectedPassword = () => {
     } = useGetPasswordQuery(id, { skip: !id });
 
     const [deletePassword] = useDeletePasswordMutation();
+
+    useEffect(() => {
+        if (password && encryptionKey && IV) {
+            const decryptFields = async () => {
+                try {
+                    setIsDecrypting(true); 
+
+                    const decryptedUsername = await decryptDataBase64(password.username, encryptionKey, IV);
+                    const decryptedPassword = await decryptDataBase64(password.password, encryptionKey, IV);
+                    const decryptedWebsite = await decryptDataBase64(password.website, encryptionKey, IV);
+                    const decryptedNote = password.note ? await decryptDataBase64(password.note, encryptionKey, IV) : "";
+
+                    setDecryptedUsername(new TextDecoder().decode(Base64ToUint8Array(decryptedUsername)));
+                    setDecryptedPassword(new TextDecoder().decode(Base64ToUint8Array(decryptedPassword)));
+                    setDecryptedWebsite(new TextDecoder().decode(Base64ToUint8Array(decryptedWebsite)));
+                    setDecryptedNote(password.note ? new TextDecoder().decode(Base64ToUint8Array(decryptedNote)) : "");
+
+                } catch (error) {
+                    console.error("Failed to decrypt data", error);
+                    toast.error("Failed to decrypt data", { position: 'bottom-left' });
+                } finally {
+                    setIsDecrypting(false); 
+                }
+            };
+
+            decryptFields();
+        }
+    }, [password, encryptionKey, IV]);
 
     const handleBackClick = () => {
         navigate("/passwords");
@@ -42,8 +81,10 @@ const SelectedPassword = () => {
     };
 
     let content;
-    if (isLoading) {
-        content = <div>Securely loading password...</div>;
+    if (isLoading || isDecrypting) {
+        content = (
+            <div className="text-center py-5 text-sm text-zinc-300">Securely loading your password...</div>
+        )
     } else if (password) {
         content = (
             <div className="relative z-10">
@@ -51,7 +92,7 @@ const SelectedPassword = () => {
                     <div className="my-auto cursor-pointer text-blue-500 mr-3" onClick={handleBackClick}>
                         <img src="/arrowBack.svg" alt="Back" className="w-5" />
                     </div>
-                    <h2 className="my-auto text-xl font-semibold">{password.website}</h2>
+                    <h2 className="my-auto text-xl font-semibold">{decryptedWebsite}</h2>
                 </div>
 
                 <div className="bg-secondary flex-col mt-4 mb-10 shadow-md shadow-zinc-950 rounded-md py-4">
@@ -61,7 +102,7 @@ const SelectedPassword = () => {
                             <input
                                 type="text"
                                 id="username"
-                                value={password.username}
+                                value={decryptedUsername}
                                 disabled
                                 placeholder="No username added"
                                 className="mt-1.5 bg-neutral-700 block w-full rounded-lg border-0 py-1.5 pr-10 text-neutral-400 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6"
@@ -69,8 +110,8 @@ const SelectedPassword = () => {
                             <div className="absolute inset-y-0 right-0 flex items-center mr-6 mt-8">
                                 <img
                                     onClick={() => {
-                                        navigator.clipboard.writeText(password.password)
-                                        toast("Username copied to clipboard", {position: "bottom-left"})
+                                        navigator.clipboard.writeText(decryptedUsername);
+                                        toast("Username copied to clipboard", { position: "bottom-left" });
                                     }}
                                     src="/copy.svg"
                                     alt="copy username"
@@ -79,27 +120,15 @@ const SelectedPassword = () => {
                             </div>
                         </div>
 
-                        {/* <div className="flex-col w-full px-4">
-                            <label htmlFor="website" className="text-xs font-semibold">Website</label>
-                            <input
-                                type="text"
-                                id="website"
-                                value={password.website}
-                                disabled
-                                placeholder="No website added"
-                                className="mt-1.5 bg-neutral-700 block w-full rounded-lg border-0 py-1.5 text-neutral-400 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6"
-                            />
-                        </div> */}
                         <div className="flex-col w-full px-4">
                             <label htmlFor="website" className="text-xs font-semibold block mt-2 mb-2">Website</label>
-                            <a 
-                                href={`https://www.${password.website}`} 
+                            <Link to={`https://www.${decryptedWebsite}`}
                                 className="w-full hover:underline text-white text-sm"
                                 target="_blank" 
                                 rel="noopener noreferrer"
                             >
-                                {password.website}
-                            </a>
+                                {decryptedWebsite}
+                            </Link>
                         </div>
                     </div>
 
@@ -109,7 +138,7 @@ const SelectedPassword = () => {
                             <input
                                 type={showPassword ? "text" : "password"}
                                 id="password"
-                                value={password.password}
+                                value={decryptedPassword}
                                 disabled
                                 placeholder="No password added"
                                 className="mt-1.5 bg-neutral-700 block w-full rounded-lg border-0 py-1.5 pr-16 text-neutral-400 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6"
@@ -123,8 +152,8 @@ const SelectedPassword = () => {
                                 />
                                 <img
                                     onClick={() => {
-                                        navigator.clipboard.writeText(password.password)
-                                        toast("Password copied to clipboard", {position: "bottom-left"})
+                                        navigator.clipboard.writeText(decryptedPassword);
+                                        toast("Password copied to clipboard", { position: "bottom-left" });
                                     }}
                                     src="/copy.svg"
                                     alt="copy password"
@@ -136,7 +165,7 @@ const SelectedPassword = () => {
                         <div className="flex-col w-full px-4">
                             <label htmlFor="note" className="text-xs font-semibold">Note</label>
                             <div className="px-3 resize-auto mt-1.5 bg-neutral-700 block w-full rounded-lg border-0 py-1.5 text-neutral-400 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6">
-                                {password.note ? password.note : "No note added"}
+                                {decryptedNote ? decryptedNote : "No note added"}
                             </div>
                         </div>
                     </div>
@@ -165,7 +194,7 @@ const SelectedPassword = () => {
     return (
         <main className="relative flex flex-col items-center justify-start h-full w-full text-gray-300">
             {editPassword && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-20">
+                <div className="fixed lg:top-0 lg:left-0 lg:right-0 lg:z-50 inset-0 bg-black bg-opacity-60 flex justify-center items-center z-20">
                     <div className="bg-neutral-800 text-zinc-300 p-6 w-full max-w-lg rounded-md shadow-md">
                         <UpdatePassword setEditPassword={setEditPassword} />
                     </div>

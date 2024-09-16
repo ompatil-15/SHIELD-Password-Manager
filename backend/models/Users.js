@@ -24,10 +24,10 @@ const userSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        password: {
-            type: String,
-            required: true,
-        },
+        // password: {
+        //     type: String,
+        //     required: false,
+        // },
         phone: {
             type: String,
             required: false,
@@ -69,6 +69,10 @@ const userSchema = new mongoose.Schema(
         passport: {
             type: String,
             required: false,
+        },
+        encryptedPackage: {
+            type: String,
+            required: true
         },
     }, 
     {

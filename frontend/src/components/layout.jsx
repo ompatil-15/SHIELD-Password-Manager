@@ -1,11 +1,12 @@
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import useAuth from '../hooks/useAuth'
 import { useSendLogoutMutation } from '../features/auth/authApiSlice'
-import { useEffect } from 'react'
 import LoadingPage from '../pages/loadingPage'
 import { toast } from 'sonner'
+import LoginAgain from '../pages/loginAgain'
+import { useSelector } from 'react-redux'
+import { selectCurrentId } from '../features/auth/authSlice'
 
 const user = {
   imageUrl: '/ShieldLogoGray.svg',
@@ -16,13 +17,26 @@ function classNames(...classes) {
 }
 
 export default function Layout() {
-  const { id } = useAuth();
+  const id = useSelector(selectCurrentId);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const userNavigation = [  
-    { name: id === '' ? 'Login' : 'Sign out', href: '/' },
-  ]
+  const [sendLogout, {
+    isLoading,
+    isError,
+  }] = useSendLogoutMutation();
+
+  const userNavigation = id
+    ? [{ name: 'Sign out', action: () => {
+        toast.success('Successfully logged out!', { position: 'bottom-left' });
+        navigate('/auth');
+        sendLogout().then(() => {
+          // window.location.reload();
+        }).catch(err => {
+          toast.error(err?.data?.message || 'An unexpected error occurred', { position: 'bottom-left' });
+        });
+      }}]
+    : [{ name: 'Login', action: () => window.location.href = '/auth' }];
 
   const navigation = [
     { name: 'Personal Information', href: '/personal-information', current: location.pathname.includes('/personal-information') },
@@ -30,25 +44,14 @@ export default function Layout() {
     { name: 'Notes', href: '/notes', current: location.pathname.includes('/notes') },
   ]
 
-  const [sendLogout, {
-    isLoading,
-    isSuccess,
-    isError,
-    error
-  }] = useSendLogoutMutation();
-
-  useEffect(() => {
-    if (isSuccess) navigate('/')
-  }, [isSuccess, navigate])
-
-  if(isLoading) return <LoadingPage />
-  if(isError) toast.error(error?.data?.message || "An unexpected error occureed", {position: "bottom-left"})
+  if (isLoading) return <LoadingPage />;
+  if (isError && !id) return <LoginAgain />;
   
   return (
     <div className="flex min-h-screen flex-col text-zinc-300">
       {/* Navbar */}
-      <Disclosure as="nav" className="bg-primary">
-        <div className="mx-auto px-4 sm:px-6 lg:px-5 lg:pr-10">
+      <Disclosure as="nav" className="bg-primary lg:fixed lg:top-0 lg:left-0 lg:right-0 lg:z-50">
+        <div className="mx-auto px-4 sm:px-6">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
               <Link to="/">
@@ -61,7 +64,7 @@ export default function Layout() {
                   SHIELD Password Manager
                 </div>
               </Link>
-              <div className="hidden md:block">
+              {/* <div className="hidden md:block"> */}
                 {/* <div className="ml-10 flex items-baseline space-x-4">
                   {navigation.map((item) => (
                     <a
@@ -77,13 +80,13 @@ export default function Layout() {
                     </a>
                   ))}
                 </div> */}
-              </div>
+              {/* </div> */}
             </div>
-            <div className="hidden md:block">
-              <div className="ml-4 flex items-center md:ml-6">
+            <div className="hidden lg:block">
+              <div className="flex items-center">
 
                 {/* Profile dropdown */}
-                <Menu as="div" className="relative ml-3">
+                <Menu as="div" className="relative">
                   <div>
                     <MenuButton className="relative flex max-w-xs items-center rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                       <span className="absolute -inset-1.5" />
@@ -93,13 +96,13 @@ export default function Layout() {
                   </div>
                   <MenuItems
                     transition
-                    className="absolute z-40 right-0 w-28 flex justify-center text-center origin-top-right rounded-md bg-violet-950 font-semibold shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                    className="absolute -right-3 z-40 w-24 mt-1 flex-col justify-center text-center origin-top-right rounded-md bg-violet-950 font-semibold shadow-lg ring-1 ring-black ring-opacity-5 transition-transform duration-200 ease-out"
                   >
                     {userNavigation.map((item) => (
                       <MenuItem key={item.name}>
                         <button
-                          onClick={() => sendLogout()}
-                          className="block px-4 py-2 text-sm"
+                          onClick={item.action}
+                          className="px-4 py-2 text-sm"
                         >
                           {item.name}
                         </button>
@@ -109,9 +112,9 @@ export default function Layout() {
                 </Menu>
               </div>
             </div>
-            <div className="-mr-2 flex md:hidden">
+            <div className="-mr-2 flex lg:hidden">
               {/* Mobile menu button */}
-              <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+              <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                 <span className="absolute -inset-0.5" />
                 <span className="sr-only">Open main menu</span>
                 <Bars3Icon aria-hidden="true" className="block h-6 w-6 group-data-[open]:hidden" />
@@ -121,21 +124,21 @@ export default function Layout() {
           </div>
         </div>
 
-        <DisclosurePanel className="md:hidden">
+        <DisclosurePanel className="lg:hidden">
           <div className="pb-3 pt-2">
             {navigation.map((item) => (
-              <DisclosureButton
-                key={item.name}
-                as="a"
-                href={item.href}
-                aria-current={item.current ? 'page' : undefined}
-                className={classNames(
-                  item.current ? 'bg-primary text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                  'block px-5 py-2 text-base font-medium'
-                )}
-              >
-                {item.name}
-              </DisclosureButton>
+              <Link to={item.href} key={item.name}>
+                <DisclosureButton
+                  // href={item.href}
+                  aria-current={item.current ? 'page' : undefined}
+                  className={classNames(
+                    item.current ? 'w-full text-start bg-secondary text-white' : ' hover:text-white text-gray-300',
+                    'block px-5 py-2 text-base font-medium'
+                  )}
+                >
+                  {item.name}
+                </DisclosureButton>
+              </Link>
             ))}
           </div>
           <div className="border-t z-40 border-gray-700 pb-3">
@@ -144,8 +147,8 @@ export default function Layout() {
                 <DisclosureButton
                   key={item.name}
                   as="a"
-                  onClick={() => sendLogout()}
-                  className="block rounded-md text-base font-medium hover:bg-gray-700 hover:text-white"
+                  onClick={item.action}
+                  className="block rounded-md text-base font-medium hover:text-white"
                 >
                   {item.name}
                 </DisclosureButton>
@@ -157,12 +160,12 @@ export default function Layout() {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <div className="hidden lg:flex md:w-64 md:flex-col bg-primary">
+        <div className="hidden lg:flex md:w-64 md:flex-col bg-primary lg:fixed lg:top-16 lg:bottom-0 lg:z-40">
           <nav className="flex-1">
             {navigation.map((item) => (
-              <a
+              <Link to={item.href}
                 key={item.name}
-                href={item.href}
+                // href={item.href}
                 aria-current={item.current ? 'page' : undefined}
                 className={classNames(
                   item.current ? 'bg-violet-950 text-white' : 'text-gray-300 hover:bg-zinc-800 hover:text-white',
@@ -170,13 +173,13 @@ export default function Layout() {
                 )}
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
 
         {/* Main content */}
-        <main className="flex-1 bg-primary">
+        <main className="flex-1 bg-primary lg:pt-16 lg:ml-64">
           <div className="mx-auto max-w-7xl">
             <Outlet />  
           </div>

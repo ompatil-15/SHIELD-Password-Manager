@@ -2,21 +2,14 @@ import { apiSlice } from '../../app/api/apiSlice';
 
 export const passwordsApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        getPasswords: builder.query({
-            query: () => '/passwords',
-            // transformResponse: (res) => {
-            //     return res.sort((a, b) => a.website.localeCompare(b.website));
-            // },
-            providesTags: ['Passwords']
-        }),
         getPassword: builder.query({
             query: (id) => `/passwords/${id}`,
             providesTags: ['Passwords'],
         }),
         getUserPasswords: builder.query({
             query: (id) => `/users/${id}/passwords`,
-            transformResponse: (res) => {
-                return res.sort((a, b) => a.website.localeCompare(b.website));
+            transformResponse: (response) => {
+                return response.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
             },
             providesTags: ['Passwords']
         }),
@@ -47,7 +40,6 @@ export const passwordsApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-    useGetPasswordsQuery,
     useGetPasswordQuery,
     useGetUserPasswordsQuery,
     useAddPasswordMutation,

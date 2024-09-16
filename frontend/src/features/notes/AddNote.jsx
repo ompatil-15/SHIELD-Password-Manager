@@ -1,34 +1,45 @@
 import { useState, useRef, useEffect } from "react";
 import { useAddNoteMutation } from "./notesApiSlice";
-import useAuth from "../../hooks/useAuth";
 import { toast } from 'sonner';
+import { encryptDataBase64, Uint8ArrayToBase64 } from "../../utils/cryptoUtils";
+import useAuth from "../../hooks/useAuth";
 
 const AddNote = ({ setAddNewNote }) => {
-    const { id } = useAuth();
-    const formRef = useRef(null); 
-    const textareaRef = useRef(null); 
+    const { id, encryptionKey, IV } = useAuth();
+    const formRef = useRef(null);
+    const textareaRef = useRef(null);
     const [newTitle, setNewTitle] = useState('');
     const [newContent, setNewContent] = useState('');
     const [addNote] = useAddNoteMutation();
 
-    // Handle click outside the form
+    const handleEncryptAndSubmit = async () => {
+        try {
+            const titleBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newTitle));
+            const contentBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newContent));
+
+            const encryptedTitle = await encryptDataBase64(titleBase64, encryptionKey, IV);
+            const encryptedContent = await encryptDataBase64(contentBase64, encryptionKey, IV);
+
+            await addNote({
+                userID: id,
+                title: encryptedTitle,
+                content: encryptedContent
+            }).unwrap();
+
+            toast.success("Note added successfully", { position: 'bottom-left' });
+            setAddNewNote(false);
+        } catch (error) {
+            console.error("Failed to encrypt or add note", error);
+            toast.error(error?.data?.message || "Failed to add note", { position: 'bottom-left' });
+            setAddNewNote(false);
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (formRef.current && !formRef.current.contains(event.target)) {
                 if (newTitle.trim()) {
-                    addNote({
-                        userID: id,
-                        title: newTitle,
-                        content: newContent
-                    }).unwrap()
-                    .then(() => {
-                        toast.success("Note added successfully", {position: 'bottom-left'});
-                        setAddNewNote(false);
-                    })
-                    .catch((error) => {
-                        toast.error(error?.data?.message || "Failed to add note", {position: 'bottom-left'});
-                        setAddNewNote(false);
-                    });
+                    handleEncryptAndSubmit();
                 } else {
                     setAddNewNote(false);
                 }
@@ -39,9 +50,9 @@ const AddNote = ({ setAddNewNote }) => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [addNote, newTitle, newContent, setAddNewNote, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [newTitle, newContent, encryptionKey, IV]);
 
-    // Handle textarea resizing
     const handleChange = (event) => {
         const textarea = textareaRef.current;
         textarea.style.height = "auto";
@@ -52,7 +63,6 @@ const AddNote = ({ setAddNewNote }) => {
         setNewContent(event.target.value);
     };
 
-    // Adjust textarea height on content change
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
@@ -63,11 +73,11 @@ const AddNote = ({ setAddNewNote }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-            <div 
-                ref={formRef} 
-                className="bg-secondary p-6 w-[700px] rounded-lg shadow-lg"
+            <div
+                ref={formRef}
+                className="bg-secondary p-6 w-[650px] rounded-lg shadow-lg"
             >
-                <div className="">
+                <div>
                     <input
                         type="text"
                         id="title"
@@ -98,28 +108,6 @@ const AddNote = ({ setAddNewNote }) => {
                     >
                         Cancel
                     </button>
-                    {/* <button
-                        type="button"
-                        className="submit font-semibold text-sm border-2 bg-violet-800 border-violet-800 ml-3 px-4 py-1 rounded-full"
-                        onClick={() => {
-                            if (newTitle.trim()) {
-                                addNote({
-                                    userID: id,
-                                    title: newTitle,
-                                    content: newContent
-                                }).unwrap()
-                                .then(() => {
-                                    toast.success("Note added successfully", {position: 'bottom-left'});
-                                    setAddNewNote(false);
-                                })
-                                .catch((error) => {
-                                    toast.error(error?.data?.message || "Failed to add note", {position: 'bottom-left'});
-                                });
-                            }
-                        }}
-                    >
-                        Save
-                    </button> */}
                 </div>
             </div>
         </div>

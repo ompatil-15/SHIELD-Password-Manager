@@ -1,20 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  // useGetPasswordsQuery,
-  // useGetPasswordQuery,
-  useAddPasswordMutation,
-  // useUpdatePasswordMutation,
-  // useDeletePasswordMutation,
-} from "./passwordsApiSlice";
-import useAuth from "../../hooks/useAuth";
+import { useAddPasswordMutation } from "./passwordsApiSlice";
 import { toast } from 'sonner';
-
-
+import { encryptDataBase64, Uint8ArrayToBase64 } from "../../utils/cryptoUtils";
+import useAuth from "../../hooks/useAuth";
 
 const AddPassword = ({ setAddNewPassword }) => {
-  const { id } = useAuth();
+  const { id, encryptionKey, IV } = useAuth();
+
   const websiteRef = useRef();
   const [showPassword, setShowPassword] = useState(false);
+
   const [newPassword, setNewPassword] = useState({
     website: "",
     username: "",
@@ -30,14 +25,30 @@ const AddPassword = ({ setAddNewPassword }) => {
 
   const [addPassword] = useAddPasswordMutation();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const websiteBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.website));
+    const usernameBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.username));
+    const passwordBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.password));
+    const noteBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.note));
+
+    const encryptedWebsite = await encryptDataBase64(websiteBase64, encryptionKey, IV)
+    const encryptedUsername = await encryptDataBase64(usernameBase64, encryptionKey, IV)
+    const encryptedPassword = await encryptDataBase64(passwordBase64, encryptionKey, IV)
+    const encryptedNote = await encryptDataBase64(noteBase64, encryptionKey, IV)
+    
+    // console.log("website: ",encryptedWebsite)
+    // console.log("username: ",encryptedUsername)
+    // console.log("password: ",encryptedPassword)
+    // console.log("note: ",encryptedNote)
+
     addPassword({
       userID: id,
-      website: newPassword.website,
-      username: newPassword.username,
-      password: newPassword.password,
-      note: newPassword.note, 
+      website: encryptedWebsite,
+      username: encryptedUsername,
+      password: encryptedPassword,
+      note: encryptedNote, 
     }).unwrap()
     .then(() => {
       setAddNewPassword(false);
@@ -78,15 +89,17 @@ const AddPassword = ({ setAddNewPassword }) => {
     }));
   };
 
-  const validateWebsite = (e) => {
-    const input = e.target;
-    const websitePattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-    
-    if (!websitePattern.test(input.value)) {
-      input.setCustomValidity('Please enter a valid website, e.g., example.com');
-    } else {
-      input.setCustomValidity('');
-    }
+  const generateRandomPassword = (e) => {
+    // e.preventDefault();
+    setNewPassword(password => ({
+      ...password,
+      password: crypto.randomUUID()
+    }));
+  }
+
+  const validateWebsite = (value) => {
+    const websitePattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+    return websitePattern.test(value);
   };
 
   return (
@@ -96,7 +109,10 @@ const AddPassword = ({ setAddNewPassword }) => {
           <div className="mb-3">
             {"Add New Password"}
           </div>
-          <label htmlFor="new-website" className="text-xs font-semibold">Website</label>
+          <div className="flex justify-between py-1 items-end text-xs">
+            <label htmlFor="new-website" className="text-xs font-semibold">Website</label>
+            { newPassword.website && !validateWebsite(newPassword.website) && <div className="text-red-500">Enter a valid website</div>}
+          </div>
           <div className="mb-2">
             <input
               type="text"
@@ -104,7 +120,6 @@ const AddPassword = ({ setAddNewPassword }) => {
               id="new-website"
               value={newPassword.website}
               onChange={(e) => handleWebsiteChange(e)}
-              onBlur={validateWebsite} 
               // placeholder="website"
               className="mt-1.5 bg-neutral-700 block w-full rounded-md border-0 py-1.5 text-neutral-50 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6"
               // pattern="^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$"
@@ -122,7 +137,10 @@ const AddPassword = ({ setAddNewPassword }) => {
               className="mt-1.5 bg-neutral-700 block w-full rounded-md border-0 py-1.5 text-neutral-50 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6"
             />
           </div>
-          <label htmlFor="new-password" className="text-xs font-semibold">Password</label>
+          <div className="flex justify-between py-1 items-end">
+            <label htmlFor="new-password" className="text-xs font-semibold">Password</label>
+            <button type="button" className="text-xs" onClick={(e) => generateRandomPassword(e)}>Generate random password?</button>
+          </div>
           <div className="relative mb-2">
             <input
               type={showPassword ? "text" : "password"}
@@ -156,9 +174,9 @@ const AddPassword = ({ setAddNewPassword }) => {
               Cancel
             </button>
             <button
-              className={(newPassword.website && newPassword.password)   ? 'bg-violet-800 submit ml-2 text-white font-medium text-sm border-2 border-violet-800 px-4 py-1 rounded-full' : 'bg-neutral-600 ml-2 text-zinc-400 font-medium text-sm border-2 border-neutral-600 px-4 py-1 rounded-full'}
+              className={(newPassword.website && newPassword.password && validateWebsite(newPassword.website)) ? 'bg-violet-800 submit ml-2 text-white font-medium text-sm border-2 border-violet-800 px-4 py-1 rounded-full' : 'bg-neutral-600 ml-2 text-zinc-400 font-medium text-sm border-2 border-neutral-600 px-4 py-1 rounded-full cursor-not-allowed'}
               type="submit"
-              disabled={!(newPassword.website && newPassword.password)}
+              disabled={!(newPassword.website && newPassword.password && validateWebsite(newPassword.website))}
             >
               Save
             </button>

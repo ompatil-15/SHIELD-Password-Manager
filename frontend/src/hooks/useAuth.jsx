@@ -1,16 +1,13 @@
 import { useSelector } from 'react-redux'
-import { selectCurrentToken } from "../features/auth/authSlice"
-import { jwtDecode } from 'jwt-decode'
+import { selectCurrentEmail, selectCurrentEncryptionKey, selectCurrentId, selectCurrentIV, selectCurrentToken } from "../features/auth/authSlice"
 
 const useAuth = () => {
-    const token = useSelector(selectCurrentToken)
+    const id = useSelector(selectCurrentId);
+    const email = useSelector(selectCurrentEmail);
+    const encryptionKey = useSelector(selectCurrentEncryptionKey);
+    const IV = useSelector(selectCurrentIV);
+    const token = useSelector(selectCurrentToken);
 
-    if (token) {
-        const decoded = jwtDecode(token)
-        const { email, id } = decoded.UserInfo
-        return { email, id }
-    }
-
-    return { username: '', id: '' }
+    return {id, email, encryptionKey, IV, token};
 }
 export default useAuth;

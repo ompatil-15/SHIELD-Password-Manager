@@ -26,7 +26,7 @@ export const authApiSlice = apiSlice.injectEndpoints({
                     dispatch(logOut())
                     setTimeout(() => {
                         dispatch(apiSlice.util.resetApiState())
-                    }, 1000)
+                    }, 2000)
                 } catch (err) {
                     console.log(err)
                 }
@@ -58,6 +58,13 @@ export const authApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: []
         }),
+        getSalt: builder.mutation({
+            query: (email) => ({
+                url: '/auth/salt',
+                method: 'POST',
+                body: { email }
+            }),
+        }),
     })
 })
 
@@ -65,5 +72,6 @@ export const {
     useLoginMutation,
     useSendLogoutMutation,
     useRefreshMutation,
-    useAddNewUserMutation
+    useAddNewUserMutation,
+    useGetSaltMutation
 } = authApiSlice

@@ -32,11 +32,22 @@ code {
   font-style: normal;
 }
 
-/* body {
-  font-family: 'Orbitron', sans-serif;
-} */
+html {
+  overflow: auto !important;
+  padding-right: 0 !important;
+}
 
-.scale-up-down {
+.dual-radial-gradient {
+  background-color: black; 
+  background-image: radial-gradient(circle at 40% 125%, rgba(204, 51, 255, 0.3), rgba(204, 51, 255, 0) 450px),
+                    radial-gradient(circle at 60% 125%, rgba(255, 105, 180, 0.3), rgba(255, 105, 180, 0) 450px),
+                    radial-gradient(circle at 50% 115%, rgba(114, 114, 114, 0.1), rgba(85, 85, 85, 0) 600px);
+}
+
+
+
+
+/* .scale-up-down {
   animation: scaleUpDown 0.15s;
 }
 
@@ -44,4 +55,4 @@ code {
   0% { transform: scale(1); }
   50% { transform: scale(1.02); }
   100% { transform: scale(1); }
-}
+} */

@@ -4,13 +4,13 @@ import Password from '../models/Passwords.js';
 import mongoose from 'mongoose';
 import asyncHandler from 'express-async-handler'; //error handling middleware
 // handle enryption on the client-side (Zero Knowledge Architecture)
-// import { encrypt, decrypt } from '../utils/AES256Encryption.js'; //AES256 encryption
+// Everything is encrypted with AES-256, literally everything
 
 // @desc Get all users
 // @route GET /users
 // @access Private
 const getAllUsers = asyncHandler(async (req, res) => {
-    const users = await User.find().select('-password').lean();
+    const users = await User.find().select('-encryptedPackage').lean();
     // const users = await User.find().lean();
 
     if(!users?.length) {
@@ -29,7 +29,7 @@ const getUser = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'All fields are required'});
     }
 
-    const user = await User.findById(id).select('-password').lean();
+    const user = await User.findById(id).select('-encryptedPackage').lean();
     // const user = await User.findById(id).lean();
 
     if(!user) {
@@ -45,30 +45,35 @@ const createNewUser = asyncHandler(async (req, res) => {
     const { 
         fullName = '', 
         email = '', 
-        password = '', 
         phone = '', 
-        address = '', 
+        address = {
+            streetAddress: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: ""
+        }, 
         dob = '', 
         pan = '', 
         aadhaar = '', 
-        passport = '' 
+        passport = '', 
+        encryptedPackage = ''
     } = req.body;
     
-    if(!fullName || !email || !password){
+    if(!fullName || !email || !encryptedPackage){
         return res.status(400).json({ message: 'All fields are required' });
     }
 
     //lean strips extra mongoos methods
     //exec to get back a promise when you pass in value not need when no valeus passed like find()
-    const duplicate = await User.findOne({ email }).lean().exec();
+    const duplicate = await User.findOne({ email }).collation({ locale: 'en', strength: 2 }).lean().exec();
 
     if(duplicate) {
         return res.status(409).json({ message: 'Email already exists'});
     }
 
-    // const encryptedPassword = encrypt(password);
 
-    const userObject = { fullName, email, password, phone, dob, address, pan, aadhaar, passport}
+    const userObject = { fullName, email, phone, dob, address, pan, aadhaar, passport, encryptedPackage}
 
     const user = await User.create(userObject);
 
@@ -85,10 +90,10 @@ const createNewUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
 
     const { id } = req.params;
-    // const { id, fullName, email, password, phone, address, dob, pan, aadhaar, passport} = req.body;
-    const { fullName, email, password, phone, address, dob, pan, aadhaar, passport} = req.body;
+    // const { id, fullName, email, phone, address, dob, pan, aadhaar, passport} = req.body;
+    const { fullName, email, phone, address, dob, pan, aadhaar, passport} = req.body;
 
-    if(!id){
+    if(!id || !mongoose.isValidObjectId(id)){
         return res.status(400).json({ message: 'All fields are required'});
     }
 
@@ -98,7 +103,7 @@ const updateUser = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'User not found'});
     }
 
-    const duplicate = await User.findOne({ email }).lean().exec();
+    const duplicate = await User.findOne({ email }).collation({ locale: 'en', strength: 2 }).lean().exec();
     if(duplicate && duplicate?._id.toString() !== id){
         return res.status(409).json({ message: 'Email already exits'});
     }
@@ -111,10 +116,6 @@ const updateUser = asyncHandler(async (req, res) => {
     user.pan = pan;
     user.aadhaar = aadhaar;
     user.passport = passport;
-
-    if(password) {
-        user.password = password;
-    }
 
     const updatedUser = await user.save();
 
@@ -159,9 +160,9 @@ const getUserPasswords = asyncHandler(async(req, res) => {
 
     const passwords = await Password.find({ userID: id }).lean();
 
-    if(!passwords?.length) {
-        return res.status(400).json({message: 'No passwords found'});
-    }
+    // if(!passwords?.length) {
+    //     return res.status(400).json({message: 'No passwords found'});
+    // }
     res.json(passwords);
 })
 
@@ -178,9 +179,9 @@ const getUserNotes = asyncHandler(async(req, res) => {
 
     const notes = await Note.find({ userID: id }).lean();
 
-    if(!notes?.length) {
-        return res.status(400).json({message: 'No notes found'});
-    }
+    // if(!notes?.length) {
+    //     return res.status(400).json({message: 'No notes found'});
+    // }
     res.json(notes);
 })
 

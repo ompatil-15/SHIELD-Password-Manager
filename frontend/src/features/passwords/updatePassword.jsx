@@ -1,19 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  // useGetPasswordsQuery,
   useGetPasswordQuery,
-  //useAddPasswordMutation,
   useUpdatePasswordMutation,
-  // useDeletePasswordMutation,
 } from "./passwordsApiSlice";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from 'sonner';
+import { encryptDataBase64, Uint8ArrayToBase64, decryptDataBase64, Base64ToUint8Array } from "../../utils/cryptoUtils";
+import useAuth from "../../hooks/useAuth";
 
 const UpdatePassword = ({ setEditPassword }) => {
     const { id } = useParams();
+    const { encryptionKey, IV } = useAuth();
+
+
     const userRef = useRef();
     const navigate =  useNavigate();
     const [showPassword, setShowPassword] = useState(false);
+    const [isDecrypting, setIsDecrypting] = useState(true);
+
     const [newPassword, setNewPassword] = useState({
         website: "",
         username: "",
@@ -26,7 +30,6 @@ const UpdatePassword = ({ setEditPassword }) => {
           userRef.current.focus();
         }
     }, [])
-    
 
     const [updatePassword] = useUpdatePasswordMutation();
 
@@ -37,17 +40,39 @@ const UpdatePassword = ({ setEditPassword }) => {
         isError,
     } = useGetPasswordQuery(id, { skip: !id });
 
-    
     useEffect(() => {
-        if (password) {
-            setNewPassword({
-                website: password.website || "",
-                username: password.username || "",
-                password: password.password || "",
-                note: password.note || ""
-            });
+        if (password && encryptionKey && IV) {
+            const decrypt = async () => {
+                try {
+                    setIsDecrypting(true);
+
+                    const decryptedWebsite = await decryptDataBase64(password.website, encryptionKey, IV);
+                    const decryptedUsername = await decryptDataBase64(password.username, encryptionKey, IV);
+                    const decryptedPassword = await decryptDataBase64(password.password, encryptionKey, IV);
+                    const decryptedNote = await decryptDataBase64(password.note, encryptionKey, IV);
+
+                    const decodedWebsite = new TextDecoder().decode(Base64ToUint8Array(decryptedWebsite));
+                    const decodedUsername = new TextDecoder().decode(Base64ToUint8Array(decryptedUsername));
+                    const decodedPassword = new TextDecoder().decode(Base64ToUint8Array(decryptedPassword));
+                    const decodedNote = new TextDecoder().decode(Base64ToUint8Array(decryptedNote));
+                    setNewPassword(prev => ({
+                        ...prev,
+                        website: decodedWebsite,
+                        username: decodedUsername,
+                        password: decodedPassword,
+                        note: decodedNote
+                    }));
+                } catch (error) {
+                    console.error("Failed to decrypt password", error);
+                    toast.error("Failed to decrypt password", { position: 'bottom-left' });
+                } finally {
+                    setIsDecrypting(false); 
+                }
+            };
+
+            decrypt();
         }
-    }, [password]);
+    }, [password, encryptionKey, IV]);
 
     const handleUsernameChange = (e) => {
         setNewPassword(password => ({
@@ -71,14 +96,22 @@ const UpdatePassword = ({ setEditPassword }) => {
     };
 
     
-    const handleSavePassword = (e) => {
+    const handleSavePassword = async (e) => {
         e.preventDefault();
         if(id){
+            const usernameBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.username));
+            const passwordBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.password));
+            const noteBase64 = Uint8ArrayToBase64(new TextEncoder().encode(newPassword.note));
+
+            const encryptedUsername = await encryptDataBase64(usernameBase64, encryptionKey, IV)
+            const encryptedPassword = await encryptDataBase64(passwordBase64, encryptionKey, IV)
+            const encryptedNote = await encryptDataBase64(noteBase64, encryptionKey, IV)
+            
             updatePassword({
                 id: password._id,
-                username: newPassword.username,
-                password: newPassword.password,
-                note: newPassword.note
+                username: encryptedUsername,
+                password: encryptedPassword,
+                note: encryptedNote
             }).unwrap()
             .then(() => {
                 toast.success("Password updated successfully", {position: 'bottom-left'});
@@ -93,8 +126,11 @@ const UpdatePassword = ({ setEditPassword }) => {
     };
 
     let content;
-    if (isLoading) {
-        content = <div>Securely loading password...</div>;
+    if (isLoading || isDecrypting) {
+        content = (
+        <div className="text-center py-5 text-sm text-zinc-300">Securely loading your passwords...</div>
+        )
+
     } else if (isSuccess) {
         content = (
             <div className="">
@@ -178,7 +214,6 @@ const UpdatePassword = ({ setEditPassword }) => {
         toast.error("Failed to fetch password data", {position: 'bottom-left'});
         navigate("/passwords");
     }
-    
 
     return (
         <div>

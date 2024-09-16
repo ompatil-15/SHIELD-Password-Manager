@@ -11,31 +11,31 @@ import PersonalInformation from './features/personalInfo/PersonalInformation';
 import PersistLogin from './features/auth/persistLogin';
 import Prefetch from './features/auth/prefetch';
 import Layout from './components/layout';
+import BuyPremium from './pages/buyPremium';
 
 function App() {
   return (
     <Router>
       <Routes>  
+        
+        <Route path="/" element={<HomePage />} />
         <Route path="/auth" element={<Auth />} />
-        <Route index element={<HomePage />} />
+        <Route path="/premium" element={<BuyPremium />} />
 
         <Route path="/" element={<Layout />} >
-
           <Route element={<PersistLogin />}>
             <Route element={<Prefetch />}>
-
-              <Route element={null}>
-                <Route path="/personal-information" element={<PersonalInformation />} />
-                <Route path="/passwords/:id" element={<SelectedPassword />}/>
-                <Route path="/passwords" element={<Passwords />} />
-                <Route path="/notes/:id" element={<Note />} />
-                <Route path="/notes" element={<Notes />} />
-              </Route>
-
+              <Route path="/personal-information" element={<PersonalInformation />} />
+              <Route path="/passwords/:id" element={<SelectedPassword />}/>
+              <Route path="/passwords" element={<Passwords />} />
+              <Route path="/notes/:id" element={<Note />} />
+              <Route path="/notes" element={<Notes />} />
             </Route>
           </Route>
         </Route>
+
         <Route path="*" element={<NotFoundPage />} />
+
       </Routes>
     </Router>
   );

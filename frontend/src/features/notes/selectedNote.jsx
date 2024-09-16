@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from "react";
-import { 
-    useGetNoteQuery,
-    useUpdateNoteMutation,
-    useDeleteNoteMutation
-} from "./notesApiSlice";
+import { useGetNoteQuery, useUpdateNoteMutation, useDeleteNoteMutation } from "./notesApiSlice";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from 'sonner';
+import { Base64ToUint8Array, decryptDataBase64, encryptDataBase64, Uint8ArrayToBase64 } from "../../utils/cryptoUtils";
+import useAuth from "../../hooks/useAuth";
 
 const Note = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { encryptionKey, IV } = useAuth();
+
     const [newTitle, setNewTitle] = useState('');
     const [newContent, setNewContent] = useState('');
+    const [prevTitle, setPrevTitle] = useState('');
+    const [prevContent, setPrevContent] = useState('');
+
     const textareaRef = useRef(null);
     const formRef = useRef(null);
 
@@ -26,40 +29,61 @@ const Note = () => {
     } = useGetNoteQuery(id, { skip: !id });
 
     useEffect(() => {
-        if (note) {
-            setNewTitle(note.title);
-            setNewContent(note.content);
-        }
-    }, [note]);
+        const decryptNote = async () => {
+            if (note) {
+                try {
+                    const decryptedTitle = await decryptDataBase64(note.title, encryptionKey, IV);
+                    const decryptedContent = await decryptDataBase64(note.content, encryptionKey, IV);
+                    const decodedTitle = (new TextDecoder().decode(Base64ToUint8Array(decryptedTitle)));
+                    const decodedContent = (new TextDecoder().decode(Base64ToUint8Array(decryptedContent)));
+                    setNewTitle(decodedTitle);
+                    setNewContent(decodedContent);
+                    setPrevTitle(decodedTitle);
+                    setPrevContent(decodedContent);
+                } catch (error) {
+                    console.error("Failed to decrypt note:", error);
+                    toast.error("Failed to decrypt note", { position: 'bottom-left' });
+                }
+            }
+        };
+
+        decryptNote();
+    }, [note, encryptionKey, IV]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (formRef.current && !formRef.current.contains(event.target)) {
-                if (note && (note.title !== newTitle || note.content !== newContent)) {
-                    updateNote({
-                        id: note._id,
-                        title: newTitle,
-                        content: newContent,
-                    })
-                    .unwrap()
-                    .then(() => {
-                        toast.success("Note updated successfully", { position: 'bottom-left' });
-                        navigate('/notes');
-                    })
-                    .catch((error) => {
-                        toast.error(error?.data?.message || "Failed to update note", { position: 'bottom-left' });
-                        // console.error("Failed to update note:", error);
-                    });
+                if ((prevTitle !== newTitle || prevContent !== newContent)) {
+                    const encryptNote = async () => {
+                        try {
+                            const encryptedTitle = await encryptDataBase64(Uint8ArrayToBase64(new TextEncoder().encode(newTitle)), encryptionKey, IV);
+                            const encryptedContent = await encryptDataBase64(Uint8ArrayToBase64(new TextEncoder().encode(newContent)), encryptionKey, IV);
+                            
+                            await updateNote({
+                                id: note._id,
+                                title: encryptedTitle,
+                                content: encryptedContent,
+                            }).unwrap();
+                            
+                            toast.success("Note updated successfully", { position: 'bottom-left' });
+                            navigate('/notes');
+                        } catch (error) {
+                            toast.error(error?.data?.message || "Failed to update note", { position: 'bottom-left' });
+                        }
+                    };
+                    
+                    encryptNote();
                 } else {
                     navigate('/notes');
                 }
             }
         };
+        
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [navigate, newContent, newTitle, note, updateNote]);
+    }, [navigate, newContent, newTitle, prevTitle, prevContent, note, updateNote, encryptionKey, IV]);
 
     const handleDeleteNote = () => {
         if (id) {
@@ -71,7 +95,6 @@ const Note = () => {
             })
             .catch((error) => {
                 toast.error(error?.data?.message || "Failed to delete note", { position: 'bottom-left' });
-                // console.error("Failed to delete note:", error);
             });
         }
     };
@@ -119,9 +142,6 @@ const Note = () => {
                     style={{ maxHeight: "500px" }}
                 />
                 <div className="flex justify-end items-center mt-2">
-                    {/* <Link to="/notes" className="font-semibold text-sm border-2 border-violet-500 px-4 py-1 rounded-full">
-                            Back
-                    </Link> */}
                     <button
                         onClick={handleDeleteNote}
                         className="submit font-semibold text-sm border-2 bg-violet-800 border-violet-800 ml-3 px-4 py-1 rounded-full"
@@ -136,8 +156,8 @@ const Note = () => {
     }
 
     return (
-        <main className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-            <div className="bg-secondary p-6 rounded-lg w-[700px]" ref={formRef}>
+        <main className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-secondary p-6 rounded-lg w-[650px]" ref={formRef}>
                 {content}
             </div>
         </main>

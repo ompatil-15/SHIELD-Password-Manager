@@ -2,10 +2,6 @@ import { apiSlice } from '../../app/api/apiSlice';
 
 export const notesApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        getNotes: builder.query({
-            query: () => '/notes',
-            providesTags: ['Notes'],
-        }),
         getNote: builder.query({
             query: (id) => `/notes/${id}`,
             providesTags: ['Notes'],
@@ -44,7 +40,6 @@ export const notesApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-    useGetNotesQuery,
     useGetNoteQuery,
     useGetUserNotesQuery,
     useAddNoteMutation,

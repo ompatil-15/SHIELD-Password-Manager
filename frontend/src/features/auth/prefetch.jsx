@@ -4,21 +4,24 @@ import { personalInfoApiSlice } from '../personalInfo/personalInfoApiSlice';
 import { passwordsApiSlice } from '../passwords/passwordsApiSlice';
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { selectCurrentId } from './authSlice';
+
+// Prefetch can be usefull to reduce response time by pre-fetching data 
 
 const Prefetch = () => {
+    const id = useSelector(selectCurrentId);
     useEffect(() => {
-        // console.log('subscribing')
-        const passwords = store.dispatch(passwordsApiSlice.endpoints.getPasswords.initiate())
-        const notes = store.dispatch(notesApiSlice.endpoints.getNotes.initiate())
-        const personalInfo = store.dispatch(personalInfoApiSlice.endpoints.getPersonalInformation.initiate())
-
-        return () => {
-            // console.log('unsubscribing')
-            passwords.unsubscribe()
-            notes.unsubscribe()
-            personalInfo.unsubscribe()
-        }
-    }, [])
+        store.dispatch(
+            passwordsApiSlice.util.prefetch('getUserPasswords', id, { force: false })
+        );
+        store.dispatch(
+            notesApiSlice.util.prefetch('getUserNotes', id, { force: false })
+        );
+        store.dispatch(
+            personalInfoApiSlice.util.prefetch('getPersonalInformation', id, { force: false })
+        );
+    }, [id])
 
     return <Outlet />
 }

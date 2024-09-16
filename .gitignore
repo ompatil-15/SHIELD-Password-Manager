@@ -1,4 +1,4 @@
-backend/logs/*
+backend/logs/
 backend/.env
 backend/node_modules/
 backend/config/notes.md

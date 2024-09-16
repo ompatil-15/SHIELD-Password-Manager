@@ -3,12 +3,15 @@ import {
     useGetPersonalInformationQuery, 
     useUpdatePersonalInformationMutation 
 } from "./personalInfoApiSlice";
-import useAuth from "../../hooks/useAuth";
-import LoadingPage from "../../pages/loadingPage";
 import { toast } from 'sonner';
+import { useSelector } from "react-redux";
+import { selectCurrentEncryptionKey, selectCurrentId, selectCurrentIV } from "../auth/authSlice";
+import { decryptDataBase64, encryptDataBase64, Uint8ArrayToBase64, Base64ToUint8Array } from "../../utils/cryptoUtils";
 
 const PersonalInformation = () => {
-    const { id } = useAuth();
+    const id = useSelector(selectCurrentId);
+    const encryptionKey = useSelector(selectCurrentEncryptionKey);
+    const IV = useSelector(selectCurrentIV);
     const [personalInformation, setPersonalInformation] = useState({
         fullName: "",
         email: "",
@@ -26,7 +29,6 @@ const PersonalInformation = () => {
         password: ""
     });
 
-    // State to track the original information
     const [originalInformation, setOriginalInformation] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [updatePersonalInformation] = useUpdatePersonalInformationMutation();
@@ -45,27 +47,49 @@ const PersonalInformation = () => {
             refetchOnMountOrArgChange: true
         });
 
-    useEffect(() => {
-        if (user) {
-            const newInfo = {
-                fullName: user.fullName || "", 
-                email: user.email || "",
-                phone: user.phone || "",
-                address: user.address || {
-                    streetAddress: "",
-                    city: "",
-                    state: "",
-                    country: "",
-                    pincode: ""
-                },
-                pan: user.pan || "",
-                aadhaar: user.aadhaar || "",
-                passport: user.passport || ""
-            };
-            setPersonalInformation(newInfo);
-            setOriginalInformation(newInfo);
-        }
-    }, [user, id]);
+        useEffect(() => {
+            if (user) {
+                const decryptField = async (encryptedField) => {
+                    if (encryptedField) {
+                        try {
+                            const decryptedBase64 = await decryptDataBase64(encryptedField, encryptionKey, IV);
+                            return new TextDecoder().decode(Base64ToUint8Array(decryptedBase64));
+                        } catch (error) {
+                            console.error('Error decrypting field:', error);
+                            toast.error('Error decrypting user info', { position: 'bottom-left' });
+                        }
+                    }
+                    return "";
+                };
+        
+                const decryptUserInfo = async () => {
+                    try {
+                        const decryptedInfo = {
+                            fullName: user.fullName || '',
+                            email: user.email || '',
+                            phone: user.phone ? await decryptField(user.phone) : '',
+                            address: {
+                                streetAddress: user.address?.streetAddress ? await decryptField(user.address.streetAddress) : '',
+                                city: user.address?.city ? await decryptField(user.address.city) : '',
+                                state: user.address?.state ? await decryptField(user.address.state) : '',
+                                country: user.address?.country ? await decryptField(user.address.country) : '',
+                                pincode: user.address?.pincode ? await decryptField(user.address.pincode) : '',
+                            },
+                            pan: user.pan ? await decryptField(user.pan) : '',
+                            aadhaar: user.aadhaar ? await decryptField(user.aadhaar) : '',
+                            passport: user.passport ? await decryptField(user.passport) : '',
+                        };
+                        setPersonalInformation(decryptedInfo);
+                        setOriginalInformation(decryptedInfo);
+                    } catch (error) {
+                        console.error('Error decrypting user info:', error);
+                        toast.error('Error decrypting user info', { position: 'bottom-left' });
+                    }
+                };
+        
+                decryptUserInfo();
+            }
+        }, [user, encryptionKey, IV]);
 
     useEffect(() => {
         const handleBeforeUnload = (event) => {
@@ -107,32 +131,47 @@ const PersonalInformation = () => {
         }
     };
 
-    const handleSavePersonalInformation = () => {
+    const handleSavePersonalInformation = async () => {
         if (id) {
-            updatePersonalInformation({
-                id: id,
-                fullName: personalInformation.fullName, 
-                email: personalInformation.email,
-                phone: personalInformation.phone,
-                address: personalInformation.address,
-                pan: personalInformation.pan,
-                aadhaar: personalInformation.aadhaar,
-                passport: personalInformation.passport
-            }).unwrap()
-            .then(() => {
-                toast.success("Personal information updated successfully", { position: 'bottom-left' });
-                setHasChanges(false); 
-                setOriginalInformation(personalInformation);
-            })
-            .catch((error) => {
-                toast.error(error?.data?.message || 'Failed to update personal information', { position: 'bottom-left' });
-            });
-        } 
+            const encryptField = async (field) => {
+                return field ? await encryptDataBase64(Uint8ArrayToBase64(new TextEncoder().encode(field)), encryptionKey, IV) : '';
+            };
+    
+            const encryptedPersonalInformation = {
+                fullName: personalInformation.fullName || '',
+                email: personalInformation.email || '',
+                phone: await encryptField(personalInformation.phone),
+                address: {
+                    streetAddress: await encryptField(personalInformation.address.streetAddress),
+                    city: await encryptField(personalInformation.address.city),
+                    state: await encryptField(personalInformation.address.state),
+                    country: await encryptField(personalInformation.address.country),
+                    pincode: await encryptField(personalInformation.address.pincode),
+                },
+                pan: await encryptField(personalInformation.pan),
+                aadhaar: await encryptField(personalInformation.aadhaar),
+                passport: await encryptField(personalInformation.passport),
+            };
+    
+            updatePersonalInformation({ id, ...encryptedPersonalInformation })
+                .unwrap()
+                .then(() => {
+                    toast.success("Personal information updated successfully", { position: 'bottom-left' });
+                    setHasChanges(false);
+                    setOriginalInformation(personalInformation);
+                })
+                .catch((error) => {
+                    toast.error('Failed to update personal information', { position: 'bottom-left' });
+                });
+        }
     };
+    
 
     let content;
     if (isLoading) {
-        content = <LoadingPage />;
+        content = (
+            <div className="text-center py-5 text-sm text-zinc-300">Securely loading your personal information...</div>
+        );
     } else if (isSuccess) {
         content = (
             <form>
@@ -295,7 +334,7 @@ const PersonalInformation = () => {
         );
 
     } else if (isError) {
-        content = <p className="text-gray-300 text-sm">Failed to load user information</p>;
+        content = <p className="text-sm text-center text-red-500">Failed to load user information</p>;
     }
 
     return (
