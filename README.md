@@ -1,6 +1,6 @@
 # SHIELD Password Manager
 
-SHIELD is a secure password manager designed to keep your passwords and personal information safe using state-of-the-art encryption techniques. Built with the MERN stack, Redux, and RTK Query, SHIELD emphasizes strong security principles including true end-to-end encryption and a zero-knowledge architecture.
+SHIELD is a secure password manager designed to keep your passwords, notes and personal information safe using state-of-the-art encryption techniques. Built with the MERN stack, Redux, and RTK Query, SHIELD emphasizes strong security principles including true end-to-end encryption and a zero-knowledge architecture.
 
 ## Features
 
