@@ -2,6 +2,8 @@
 
 SHIELD is a secure password manager designed to keep your passwords, notes and personal information safe using state-of-the-art encryption techniques. Built with the MERN stack, Redux, and RTK Query, SHIELD emphasizes strong security principles including true end-to-end encryption and a zero-knowledge architecture.
 
+[Live Website](https://ompatil-shield.onrender.com/)
+
 [Read white paper on our security design](https://github.com/ompatil-15/SHIELD-Password-Manager/blob/main/SHIELD-Security-Design.pdf)
 
 ## Features
