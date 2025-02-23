@@ -58,29 +58,36 @@ export default function Auth() {
     e.preventDefault();
 
     try {
-      if (!isSignup) {
-        // Authenticate user by fetching salt and sending hash to verify
-        const { salt } = await getSalt(email.toLocaleLowerCase()).unwrap()
-        const passwordBase64 = Uint8ArrayToBase64(new TextEncoder().encode(password));
-        const hashBase64 = await hashPasswordWithAesKeyAsSaltBase64(passwordBase64, salt);
-        const { accessToken } = await login({ email, hash: hashBase64 }).unwrap();
-        const encryptionKey = await deriveKeyBase64(passwordBase64, salt)
-        dispatch(setCredentials({ accessToken, encryptionKey }));
-        setEmail('');
-        setPassword('');
-        toast.success('Successfully logged in!', { position: 'bottom-left'});
-        navigate('/passwords');
-      } else {
-        // Generate encrypted package (salt, IV, hash) in Base64 format
-        const passwordBase64 = Uint8ArrayToBase64(new TextEncoder().encode(password)); 
-        const encryptedPackageBase64 = await createEncryptedPackageBase64(passwordBase64); 
+      const passwordBase64 = Uint8ArrayToBase64(new TextEncoder().encode(password));
 
-        await addNewUser({ fullName, email: email.toLocaleLowerCase(), encryptedPackage: encryptedPackageBase64 }).unwrap();
-        handleToggle(); 
-        toast.success('Account created successfully!', { position: 'bottom-left' });
+      if (!isSignup) {
+          // Login flow
+          const { salt } = await getSalt(email.toLocaleLowerCase()).unwrap();
+          const hashBase64 = await hashPasswordWithAesKeyAsSaltBase64(passwordBase64, salt);
+          const { accessToken } = await login({ email, hash: hashBase64 }).unwrap();
+          const encryptionKey = await deriveKeyBase64(passwordBase64, salt);
+          dispatch(setCredentials({ accessToken, encryptionKey }));
+          setEmail('');
+          setPassword('');
+          toast.success('Successfully logged in!', { position: 'bottom-left' });
+          navigate('/passwords');
+      } else {
+          // Signup flow
+          const encryptedPackageBase64 = await createEncryptedPackageBase64(passwordBase64);
+          await addNewUser({ 
+              fullName, 
+              email: email.toLocaleLowerCase(), 
+              encryptedPackage: encryptedPackageBase64 
+          }).unwrap();
+          handleToggle();
+          setFullName('');
+          setEmail('');
+          setPassword('');
+          setCPassword('');
+          toast.success('Account created successfully!', { position: 'bottom-left' });
       }
     } catch (err) {
-      const errorMessage = err?.data?.message || 'An unexpected error occurred';
+      const errorMessage = err.data?.message || err.message || 'An unexpected error occurred';
       toast.error(errorMessage, { position: 'bottom-left' });
     }
   };
