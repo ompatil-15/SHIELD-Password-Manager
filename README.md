@@ -20,7 +20,7 @@ To set up SHIELD on your local machine, follow these steps:
 1. **Clone the Repository:**
 
 ```bash
-git clone https://github.com/ompatil-15/shield-password-manager.git
+git clone https://github.com/ompatil-15/SHIELD-Password-Manager.git
 cd shield-password-manager
 ```
 
